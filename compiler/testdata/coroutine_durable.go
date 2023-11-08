@@ -3176,7 +3176,7 @@ func varArgs(_fn0 ...int) {
 }
 
 //go:noinline
-func YieldFromClosure(_fn0 int) {
+func YieldFromClosure1(_fn0 int) {
 	_c := coroutine.LoadContext[int, any]()
 	var _f0 *struct {
 		IP int
@@ -3201,7 +3201,7 @@ func YieldFromClosure(_fn0 int) {
 	}()
 	switch {
 	case _f0.IP < 2:
-		_f0.X1 = closure(_f0.X0)
+		_f0.X1 = YieldingClosure(_f0.X0)
 		_f0.IP = 2
 		fallthrough
 	case _f0.IP < 3:
@@ -3209,8 +3209,12 @@ func YieldFromClosure(_fn0 int) {
 	}
 }
 
+func YieldFromClosure2(fn func()) {
+	fn()
+}
+
 //go:noinline
-func closure(_fn0 int) (_ func()) {
+func YieldingClosure(_fn0 int) (_ func()) {
 	_c := coroutine.LoadContext[int, any]()
 	var _f0 *struct {
 		IP int
@@ -3347,7 +3351,16 @@ func init() {
 			X3 []func()
 		}
 	}]("github.com/stealthrocket/coroutine/compiler/testdata.YieldAndDeferAssign.func2")
-	_types.RegisterFunc[func(_fn0 int)]("github.com/stealthrocket/coroutine/compiler/testdata.YieldFromClosure")
+	_types.RegisterFunc[func(_fn0 int)]("github.com/stealthrocket/coroutine/compiler/testdata.YieldFromClosure1")
+	_types.RegisterFunc[func(fn func())]("github.com/stealthrocket/coroutine/compiler/testdata.YieldFromClosure2")
+	_types.RegisterFunc[func(_fn0 int) (_ func())]("github.com/stealthrocket/coroutine/compiler/testdata.YieldingClosure")
+	_types.RegisterClosure[func(), struct {
+		F  uintptr
+		X0 *struct {
+			IP int
+			X0 int
+		}
+	}]("github.com/stealthrocket/coroutine/compiler/testdata.YieldingClosure.func2")
 	_types.RegisterFunc[func()]("github.com/stealthrocket/coroutine/compiler/testdata.YieldingDurations")
 	_types.RegisterClosure[func(), struct {
 		F  uintptr
@@ -3362,13 +3375,5 @@ func init() {
 	_types.RegisterFunc[func()]("github.com/stealthrocket/coroutine/compiler/testdata.YieldingExpressionDesugaring")
 	_types.RegisterFunc[func(_fn0 int) (_ int)]("github.com/stealthrocket/coroutine/compiler/testdata.a")
 	_types.RegisterFunc[func(_fn0 int) (_ int)]("github.com/stealthrocket/coroutine/compiler/testdata.b")
-	_types.RegisterFunc[func(_fn0 int) (_ func())]("github.com/stealthrocket/coroutine/compiler/testdata.closure")
-	_types.RegisterClosure[func(), struct {
-		F  uintptr
-		X0 *struct {
-			IP int
-			X0 int
-		}
-	}]("github.com/stealthrocket/coroutine/compiler/testdata.closure.func2")
 	_types.RegisterFunc[func(_fn0 ...int)]("github.com/stealthrocket/coroutine/compiler/testdata.varArgs")
 }

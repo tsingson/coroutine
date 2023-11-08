@@ -17,10 +17,11 @@ func init() {
 
 func TestCoroutineYield(t *testing.T) {
 	tests := []struct {
-		name   string
-		coro   func()
-		yields []int
-		skip   bool
+		name         string
+		coro         func()
+		generateCoro func() func()
+		yields       []int
+		skip         bool
 	}{
 		{
 			name:   "identity",
@@ -200,19 +201,25 @@ func TestCoroutineYield(t *testing.T) {
 		},
 
 		{
-			name:   "closure yield",
-			coro:   func() { YieldFromClosure(3) },
+			name:   "closure yield 1",
+			coro:   func() { YieldFromClosure1(1) },
+			yields: []int{1},
+		},
+
+		{
+			name:   "closure yield 2",
+			coro:   func() { YieldFromClosure2(YieldingClosure(2)) },
+			yields: []int{2},
+		},
+
+		{
+			name: "closure yield 3",
+			generateCoro: func() func() {
+				fn := YieldingClosure(3)
+				return func() { YieldFromClosure2(fn) }
+			},
 			yields: []int{3},
 		},
-	}
-
-	// This emulates the installation of function type information by the
-	// compiler because we are not doing codegen for the test files in this
-	// package.
-	for _, test := range tests {
-		a := types.FuncAddr(test.coro)
-		f := types.FuncByAddr(a)
-		types.RegisterFunc[func()](f.Name)
 	}
 
 	for _, test := range tests {
@@ -221,7 +228,22 @@ func TestCoroutineYield(t *testing.T) {
 				t.Skip("test is disabled")
 			}
 
-			g := coroutine.New[int, any](test.coro)
+			fn := test.coro
+			if fn == nil && test.generateCoro != nil {
+				fn = test.generateCoro()
+			}
+
+			// This emulates the installation of function type information by the
+			// compiler because we are not doing codegen for the test files in this
+			// package.
+			a := types.FuncAddr(fn)
+			f := types.FuncByAddr(a)
+			if f == nil {
+				panic("not found")
+			}
+			types.RegisterFunc[func()](f.Name)
+
+			g := coroutine.New[int, any](fn)
 
 			var yield int
 			for g.Next() {
