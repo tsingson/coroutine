@@ -547,3 +547,13 @@ func varArgs(args ...int) {
 		coroutine.Yield[int, any](arg)
 	}
 }
+
+func YieldFromClosure(n int) {
+	closure(n)()
+}
+
+func closure(arg int) func() {
+	return func() {
+		coroutine.Yield[int, any](arg)
+	}
+}

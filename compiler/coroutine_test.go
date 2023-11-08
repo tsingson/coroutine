@@ -198,6 +198,12 @@ func TestCoroutineYield(t *testing.T) {
 			coro:   func() { VarArgs(3) },
 			yields: []int{0, 1, 2},
 		},
+
+		{
+			name:   "closure yield",
+			coro:   func() { YieldFromClosure(3) },
+			yields: []int{3},
+		},
 	}
 
 	// This emulates the installation of function type information by the
