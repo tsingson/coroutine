@@ -291,8 +291,29 @@ func (c *compiler) compilePackage(p *packages.Package, colors functionColors) er
 				}
 
 			case *ast.FuncDecl:
-				color, ok := colorsByFunc[decl]
-				if !ok {
+				declcolor := colorsByFunc[decl]
+
+				// Check for colored function literals in the body.  If found, color the
+				// function decl so that it's compiled.
+				var err error
+				ast.Inspect(decl, func(n ast.Node) bool {
+					if f, ok := n.(*ast.FuncLit); ok {
+						if litcolor, ok := colorsByFunc[f]; ok {
+							if declcolor == nil {
+								declcolor = litcolor
+								colorsByFunc[decl] = declcolor
+							} else if !types.Identical(declcolor, litcolor) {
+								err = fmt.Errorf("function %s.%s has more than one color: %v vs. %v", p.Name, decl.Name, declcolor, litcolor)
+							}
+						}
+					}
+					return true
+				})
+				if err != nil {
+					return err
+				}
+
+				if declcolor == nil {
 					gen.Decls = append(gen.Decls, decl)
 					continue
 				}
@@ -302,7 +323,7 @@ func (c *compiler) compilePackage(p *packages.Package, colors functionColors) er
 				}
 
 				scope := &scope{compiler: c, colors: colorsByFunc}
-				gen.Decls = append(gen.Decls, scope.compileFuncDecl(p, decl, color))
+				gen.Decls = append(gen.Decls, scope.compileFuncDecl(p, decl, declcolor))
 			}
 		}
 
